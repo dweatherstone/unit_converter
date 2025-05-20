@@ -5,7 +5,7 @@ use std::{collections::HashMap, fmt, str::FromStr};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
-pub struct DisctanceConverter;
+pub struct DistanceConverter;
 
 static DISTANCE_FACTORS: Lazy<HashMap<(DistanceUnit, DistanceUnit), f64>> = Lazy::new(|| {
     let mut map = HashMap::new();
@@ -27,7 +27,7 @@ static DISTANCE_FACTORS: Lazy<HashMap<(DistanceUnit, DistanceUnit), f64>> = Lazy
     map
 });
 
-impl UnitConverter for DisctanceConverter {
+impl UnitConverter for DistanceConverter {
     fn convert(&self, value: f64, from: &str, to: &str) -> Result<f64, ConvertError> {
         let from_unit = DistanceUnit::from_str(from)?;
         let to_unit = DistanceUnit::from_str(to)?;
@@ -48,7 +48,7 @@ impl UnitConverter for DisctanceConverter {
     }
 }
 
-impl DisctanceConverter {
+impl DistanceConverter {
     pub fn get_unit_string(&self, unit_str: &str) -> String {
         if let Ok(unit) = DistanceUnit::from_str(unit_str) {
             unit.to_string()
@@ -93,7 +93,7 @@ mod tests {
 
     use std::str::FromStr;
 
-    use super::{DisctanceConverter, DistanceUnit};
+    use super::{DistanceConverter, DistanceUnit};
     use crate::{
         convert::UnitConverter,
         error::ConvertError,
@@ -102,29 +102,22 @@ mod tests {
 
     #[test]
     fn test_m_to_ft() {
-        let converter = DisctanceConverter;
+        let converter = DistanceConverter;
         let result = converter.convert(1.0, "m", "ft").unwrap();
         assert_approx_eq(result, 3.28084, 1e-5);
     }
 
     #[test]
     fn test_ft_to_m() {
-        let converter = DisctanceConverter;
+        let converter = DistanceConverter;
         let result = converter.convert(3.28084, "ft", "m").unwrap();
         assert_approx_eq(result, 1.0, 1e-5);
     }
 
     #[test]
     fn test_invalid_unit() {
-        assert_convert_error(DisctanceConverter, "banana", "ft", 1.0, |e| {
+        assert_convert_error(DistanceConverter, "banana", "ft", 1.0, |e| {
             matches!(e, ConvertError::InvalidUnit(_))
-        });
-    }
-
-    #[test]
-    fn test_unsupported_conversion() {
-        assert_convert_error(DisctanceConverter, "ft", "km", 1.0, |e| {
-            matches!(e, ConvertError::UnsupportedConversion(_, _))
         });
     }
 

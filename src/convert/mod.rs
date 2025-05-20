@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use distance::{DisctanceConverter, DistanceUnit};
+use distance::{DistanceConverter, DistanceUnit};
 use mass::{MassConverter, MassUnit};
 use temperature::{TemperatureConverter, TemperatureUnit};
 
@@ -18,7 +18,7 @@ pub trait UnitConverter {
 
 pub fn get_converter(from: &str, to: &str) -> Result<AnyConverter, ConvertError> {
     if DistanceUnit::from_str(from).is_ok() && DistanceUnit::from_str(to).is_ok() {
-        Ok(AnyConverter::Distance(DisctanceConverter))
+        Ok(AnyConverter::Distance(DistanceConverter))
     } else if MassUnit::from_str(from).is_ok() && MassUnit::from_str(to).is_ok() {
         Ok(AnyConverter::Mass(MassConverter))
     } else if TemperatureUnit::from_str(from).is_ok() && TemperatureUnit::from_str(to).is_ok() {
@@ -32,7 +32,7 @@ pub fn get_converter(from: &str, to: &str) -> Result<AnyConverter, ConvertError>
 }
 
 pub enum AnyConverter {
-    Distance(DisctanceConverter),
+    Distance(DistanceConverter),
     Mass(MassConverter),
     Temperature(TemperatureConverter),
 }
