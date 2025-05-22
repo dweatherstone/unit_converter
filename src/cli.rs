@@ -14,6 +14,7 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     Convert(ConvertArgs),
+    Expression(ExpressionArgs),
     List(ListArgs),
 }
 
@@ -27,6 +28,12 @@ pub struct ConvertArgs {
 
     #[arg(short, long, help = "Target unit (e.g. m, ft, kg)")]
     pub to: String,
+}
+
+#[derive(Args)]
+pub struct ExpressionArgs {
+    #[arg(short, long)]
+    pub expr: String,
 }
 
 #[derive(Args)]

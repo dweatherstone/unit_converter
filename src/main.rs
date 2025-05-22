@@ -5,6 +5,7 @@ use unitconvert::{
         UnitConverter, distance::DistanceConverter, get_converter, mass::MassConverter,
         temperature::TemperatureConverter,
     },
+    expression::parse_expression,
 };
 
 fn main() {
@@ -37,6 +38,16 @@ fn main() {
                 }
             }
         }
+        Commands::Expression(args) => match parse_expression(&args.expr) {
+            Ok((value, from, to)) => match get_converter(&from, &to) {
+                Ok(converer) => match converer.convert(value, &from, &to) {
+                    Ok(result) => println!("{} {} = {} {}", value, from, result, to),
+                    Err(e) => eprintln!("Conversion error: {}", e),
+                },
+                Err(e) => eprintln!("Unsupported conversion: {}", e),
+            },
+            Err(e) => eprintln!("Failed to parse expression: {}", e),
+        },
         Commands::List(args) => match &args.category {
             Some(category) => {
                 println!("Listing units in category: {}", category);

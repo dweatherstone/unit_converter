@@ -384,6 +384,8 @@ dependencies = [
  "assert_cmd",
  "clap",
  "predicates",
+ "regex",
+ "strsim",
  "strum",
  "strum_macros",
  "thiserror",
