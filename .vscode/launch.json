@@ -9,10 +9,11 @@
             "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}/target/debug/unitconvert",
-            "args": ["--from", "km", "--to", "lb", "10"],
+            "args": ["convert", "--from", "km", "--to", "lb", "10"],
             "cwd": "${workspaceFolder}",
             "stopOnEntry": false,
-            "sourceLanguages": ["rust"]
+            "sourceLanguages": ["rust"],
+            "preLaunchTask": "cargo build"
         },
         {
             "type": "lldb",

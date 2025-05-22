@@ -1,52 +1,25 @@
 use crate::convert::UnitConverter;
 use crate::error::ConvertError;
-use once_cell::sync::Lazy;
-use std::{collections::HashMap, fmt, str::FromStr};
+use std::{fmt, str::FromStr};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 pub struct DistanceConverter;
 
-static DISTANCE_FACTORS: Lazy<HashMap<(DistanceUnit, DistanceUnit), f64>> = Lazy::new(|| {
-    let mut map = HashMap::new();
-
-    let conversions = vec![
-        (DistanceUnit::Kilometer, DistanceUnit::Meter, 1000.0),
-        (DistanceUnit::Meter, DistanceUnit::Foot, 3.28084),
-        (
-            DistanceUnit::Foot,
-            DistanceUnit::Kilometer,
-            1000.0 * 3.28084,
-        ),
-    ];
-
-    for (from, to, factor) in conversions {
-        map.insert((from.clone(), to.clone()), factor);
-        map.insert((to, from), 1.0 / factor);
-    }
-    map
-});
-
-impl UnitConverter for DistanceConverter {
-    fn convert(&self, value: f64, from: &str, to: &str) -> Result<f64, ConvertError> {
-        let from_unit = DistanceUnit::from_str(from)?;
-        let to_unit = DistanceUnit::from_str(to)?;
-
-        DISTANCE_FACTORS
-            .get(&(from_unit, to_unit))
-            .map(|factor| value * factor)
-            .ok_or(ConvertError::UnsupportedConversion(
-                from.to_string(),
-                to.to_string(),
-            ))
-    }
-
-    fn supported_units(&self) -> Vec<String> {
-        let mut units: Vec<String> = DistanceUnit::iter().map(|unit| unit.to_string()).collect();
-        units.sort();
-        units
-    }
-}
+#[derive(Debug, Clone, Copy)]
+struct Meter(f64);
+#[derive(Debug, Clone, Copy)]
+struct Kilometer(f64);
+#[derive(Debug, Clone, Copy)]
+struct Foot(f64);
+#[derive(Debug, Clone, Copy)]
+struct Mile(f64);
+#[derive(Debug, Clone, Copy)]
+struct Inch(f64);
+#[derive(Debug, Clone, Copy)]
+struct Centimeter(f64);
+#[derive(Debug, Clone, Copy)]
+struct Millimeter(f64);
 
 impl DistanceConverter {
     pub fn get_unit_string(&self, unit_str: &str) -> String {
@@ -56,6 +29,120 @@ impl DistanceConverter {
             unit_str.to_string()
         }
     }
+
+    fn to_meter(value: f64, unit: &DistanceUnit) -> Meter {
+        match unit {
+            DistanceUnit::Meter => Meter(value),
+            DistanceUnit::Kilometer => Kilometer(value).into(),
+            DistanceUnit::Foot => Foot(value).into(),
+            DistanceUnit::Mile => Mile(value).into(),
+            DistanceUnit::Inch => Inch(value).into(),
+            DistanceUnit::Centimeter => Centimeter(value).into(),
+            DistanceUnit::Millimeter => Millimeter(value).into(),
+        }
+    }
+
+    fn from_meter(meters: Meter, unit: &DistanceUnit) -> f64 {
+        match unit {
+            DistanceUnit::Meter => meters.0,
+            DistanceUnit::Kilometer => Kilometer::from(meters).0,
+            DistanceUnit::Foot => Foot::from(meters).0,
+            DistanceUnit::Mile => Mile::from(meters).0,
+            DistanceUnit::Inch => Inch::from(meters).0,
+            DistanceUnit::Centimeter => Centimeter::from(meters).0,
+            DistanceUnit::Millimeter => Millimeter::from(meters).0,
+        }
+    }
+}
+
+impl UnitConverter for DistanceConverter {
+    fn convert(&self, value: f64, from: &str, to: &str) -> Result<f64, ConvertError> {
+        let from_unit = DistanceUnit::from_str(from)?;
+        let to_unit = DistanceUnit::from_str(to)?;
+
+        let meters = Self::to_meter(value, &from_unit);
+        Ok(Self::from_meter(meters, &to_unit))
+    }
+
+    fn supported_units(&self) -> Vec<String> {
+        let mut units: Vec<String> = DistanceUnit::iter().map(|unit| unit.to_string()).collect();
+        units.sort();
+        units
+    }
+}
+
+// Convert to Meter
+impl From<Kilometer> for Meter {
+    fn from(value: Kilometer) -> Self {
+        Meter(value.0 * 1000.0)
+    }
+}
+
+impl From<Foot> for Meter {
+    fn from(value: Foot) -> Self {
+        Meter(value.0 * 0.3048)
+    }
+}
+
+impl From<Mile> for Meter {
+    fn from(value: Mile) -> Self {
+        Meter(value.0 * 1609.34)
+    }
+}
+
+impl From<Inch> for Meter {
+    fn from(value: Inch) -> Self {
+        Meter(value.0 * 0.0254)
+    }
+}
+
+impl From<Centimeter> for Meter {
+    fn from(value: Centimeter) -> Self {
+        Meter(value.0 * 0.01)
+    }
+}
+
+impl From<Millimeter> for Meter {
+    fn from(value: Millimeter) -> Self {
+        Meter(value.0 * 0.001)
+    }
+}
+
+// Convert from Meter
+impl From<Meter> for Kilometer {
+    fn from(value: Meter) -> Self {
+        Kilometer(value.0 / 1000.0)
+    }
+}
+
+impl From<Meter> for Foot {
+    fn from(value: Meter) -> Self {
+        Foot(value.0 / 0.3048)
+    }
+}
+
+impl From<Meter> for Mile {
+    fn from(value: Meter) -> Self {
+        Mile(value.0 / 1609.34)
+    }
+}
+
+impl From<Meter> for Inch {
+    fn from(value: Meter) -> Self {
+        Inch(value.0 / 0.0254)
+    }
+}
+
+impl From<Meter> for Centimeter {
+    fn from(value: Meter) -> Self {
+        Centimeter(value.0 / 0.01)
+    }
+}
+
+impl From<Meter> for Millimeter {
+    fn from(value: Meter) -> Self {
+        Millimeter(value.0 / 0.001)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, EnumIter)]
@@ -63,6 +150,10 @@ pub enum DistanceUnit {
     Meter,
     Kilometer,
     Foot,
+    Mile,
+    Inch,
+    Centimeter,
+    Millimeter,
 }
 
 impl FromStr for DistanceUnit {
@@ -70,9 +161,19 @@ impl FromStr for DistanceUnit {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "m" | "meter" | "metre" => Ok(DistanceUnit::Meter),
-            "km" | "kilometer" | "kilometre" => Ok(DistanceUnit::Kilometer),
+            "m" | "meter" | "metre" | "meters" | "metres" => Ok(DistanceUnit::Meter),
+            "km" | "kilometer" | "kilometre" | "kilometers" | "kilometres" => {
+                Ok(DistanceUnit::Kilometer)
+            }
             "ft" | "foot" | "feet" => Ok(DistanceUnit::Foot),
+            "mi" | "mile" | "miles" => Ok(DistanceUnit::Mile),
+            "in" | "inch" | "inches" => Ok(DistanceUnit::Inch),
+            "cm" | "centimeter" | "centimeters" | "centimetre" | "centimetres" => {
+                Ok(DistanceUnit::Centimeter)
+            }
+            "mm" | "millimeter" | "millimeters" | "millimetre" | "millimetres" => {
+                Ok(DistanceUnit::Millimeter)
+            }
             _ => Err(ConvertError::InvalidUnit(s.to_string())),
         }
     }
@@ -84,6 +185,10 @@ impl fmt::Display for DistanceUnit {
             DistanceUnit::Foot => write!(f, "ft"),
             DistanceUnit::Meter => write!(f, "m"),
             DistanceUnit::Kilometer => write!(f, "km"),
+            DistanceUnit::Mile => write!(f, "mi"),
+            DistanceUnit::Inch => write!(f, "in"),
+            DistanceUnit::Centimeter => write!(f, "cm"),
+            DistanceUnit::Millimeter => write!(f, "mm"),
         }
     }
 }

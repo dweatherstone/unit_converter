@@ -1,6 +1,5 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{fmt::Display, str::FromStr};
 
-use once_cell::sync::Lazy;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -10,41 +9,59 @@ use super::UnitConverter;
 
 pub struct MassConverter;
 
-static MASS_FACTORS: Lazy<HashMap<(MassUnit, MassUnit), f64>> = Lazy::new(|| {
-    let mut map = HashMap::new();
-    let conversions = vec![
-        (MassUnit::Kilogram, MassUnit::Gram, 1000.0),
-        (MassUnit::Kilogram, MassUnit::Pound, 2.20462),
-        (MassUnit::Kilogram, MassUnit::Ounce, 35.274),
-        (MassUnit::Stone, MassUnit::Kilogram, 6.35029),
-        (MassUnit::Stone, MassUnit::Pound, 14.0),
-        (MassUnit::Pound, MassUnit::Ounce, 16.0),
-        (MassUnit::Pound, MassUnit::Gram, 453.59291),
-        (MassUnit::Stone, MassUnit::Ounce, 224.0),
-        (MassUnit::Stone, MassUnit::Gram, 6350.29497),
-        (MassUnit::Ounce, MassUnit::Gram, 28.34949),
-    ];
+#[derive(Debug, Clone, Copy)]
+struct Gram(f64);
 
-    for (from, to, factor) in conversions {
-        map.insert((from.clone(), to.clone()), factor);
-        map.insert((to, from), 1.0 / factor);
+#[derive(Debug, Clone, Copy)]
+struct Kilogram(f64);
+
+#[derive(Debug, Clone, Copy)]
+struct Ounce(f64);
+
+#[derive(Debug, Clone, Copy)]
+struct Pound(f64);
+
+#[derive(Debug, Clone, Copy)]
+struct Stone(f64);
+
+impl MassConverter {
+    pub fn get_unit_string(&self, unit_str: &str) -> String {
+        if let Ok(unit) = MassUnit::from_str(unit_str) {
+            unit.to_string()
+        } else {
+            unit_str.to_string()
+        }
     }
 
-    map
-});
+    fn to_grams(value: f64, unit: &MassUnit) -> Gram {
+        // Use grams as the base unit
+        match unit {
+            MassUnit::Gram => Gram(value),
+            MassUnit::Kilogram => Kilogram(value).into(),
+            MassUnit::Ounce => Ounce(value).into(),
+            MassUnit::Pound => Pound(value).into(),
+            MassUnit::Stone => Stone(value).into(),
+        }
+    }
+
+    fn from_grams(grams: Gram, unit: &MassUnit) -> f64 {
+        match unit {
+            MassUnit::Gram => grams.0,
+            MassUnit::Kilogram => Kilogram::from(grams).0,
+            MassUnit::Ounce => Ounce::from(grams).0,
+            MassUnit::Pound => Pound::from(grams).0,
+            MassUnit::Stone => Stone::from(grams).0,
+        }
+    }
+}
 
 impl UnitConverter for MassConverter {
-    fn convert(&self, value: f64, from: &str, to: &str) -> Result<f64, crate::error::ConvertError> {
+    fn convert(&self, value: f64, from: &str, to: &str) -> Result<f64, ConvertError> {
         let from_unit = MassUnit::from_str(from)?;
         let to_unit = MassUnit::from_str(to)?;
 
-        MASS_FACTORS
-            .get(&(from_unit, to_unit))
-            .map(|factor| value * factor)
-            .ok_or(ConvertError::UnsupportedConversion(
-                from.to_string(),
-                to.to_string(),
-            ))
+        let grams = Self::to_grams(value, &from_unit);
+        Ok(Self::from_grams(grams, &to_unit))
     }
 
     fn supported_units(&self) -> Vec<String> {
@@ -54,13 +71,53 @@ impl UnitConverter for MassConverter {
     }
 }
 
-impl MassConverter {
-    pub fn get_unit_string(&self, unit_str: &str) -> String {
-        if let Ok(unit) = MassUnit::from_str(unit_str) {
-            unit.to_string()
-        } else {
-            unit_str.to_string()
-        }
+// Convert to Gram
+impl From<Kilogram> for Gram {
+    fn from(value: Kilogram) -> Self {
+        Gram(value.0 * 1000.0)
+    }
+}
+
+impl From<Pound> for Gram {
+    fn from(value: Pound) -> Self {
+        Gram(value.0 * 453.59291)
+    }
+}
+
+impl From<Ounce> for Gram {
+    fn from(value: Ounce) -> Self {
+        Gram(value.0 * 28.34949)
+    }
+}
+
+impl From<Stone> for Gram {
+    fn from(value: Stone) -> Self {
+        Gram(value.0 * 6350.29497)
+    }
+}
+
+// Convert from Gram
+impl From<Gram> for Kilogram {
+    fn from(value: Gram) -> Self {
+        Kilogram(value.0 / 1000.0)
+    }
+}
+
+impl From<Gram> for Pound {
+    fn from(value: Gram) -> Self {
+        Pound(value.0 / 453.59291)
+    }
+}
+
+impl From<Gram> for Ounce {
+    fn from(value: Gram) -> Self {
+        Ounce(value.0 / 28.34949)
+    }
+}
+
+impl From<Gram> for Stone {
+    fn from(value: Gram) -> Self {
+        Stone(value.0 / 6350.29497)
     }
 }
 
@@ -97,5 +154,19 @@ impl Display for MassUnit {
             MassUnit::Ounce => write!(f, "oz"),
             MassUnit::Gram => write!(f, "g"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{convert::UnitConverter, test_utils::assert_approx_eq};
+
+    use super::MassConverter;
+
+    #[test]
+    fn test_kg_to_lb() {
+        let converter = MassConverter;
+        let result = converter.convert(2.5, "kg", "lb").unwrap();
+        assert_approx_eq(5.51155, result, 1e-4);
     }
 }

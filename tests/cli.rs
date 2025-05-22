@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod cli {
 
     use assert_cmd::Command;
