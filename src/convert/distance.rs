@@ -1,6 +1,7 @@
 use crate::convert::UnitConverter;
 use crate::error::ConvertError;
-use std::{fmt, str::FromStr};
+use once_cell::sync::Lazy;
+use std::{collections::HashMap, fmt, str::FromStr};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -145,7 +146,7 @@ impl From<Meter> for Millimeter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 pub enum DistanceUnit {
     Meter,
     Kilometer,
@@ -156,26 +157,20 @@ pub enum DistanceUnit {
     Millimeter,
 }
 
+impl DistanceUnit {
+    pub fn accepted_string() -> Vec<&'static str> {
+        DISTANCE_UNIT_STRINGS.keys().copied().collect()
+    }
+}
+
 impl FromStr for DistanceUnit {
     type Err = ConvertError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "m" | "meter" | "metre" | "meters" | "metres" => Ok(DistanceUnit::Meter),
-            "km" | "kilometer" | "kilometre" | "kilometers" | "kilometres" => {
-                Ok(DistanceUnit::Kilometer)
-            }
-            "ft" | "foot" | "feet" => Ok(DistanceUnit::Foot),
-            "mi" | "mile" | "miles" => Ok(DistanceUnit::Mile),
-            "in" | "inch" | "inches" => Ok(DistanceUnit::Inch),
-            "cm" | "centimeter" | "centimeters" | "centimetre" | "centimetres" => {
-                Ok(DistanceUnit::Centimeter)
-            }
-            "mm" | "millimeter" | "millimeters" | "millimetre" | "millimetres" => {
-                Ok(DistanceUnit::Millimeter)
-            }
-            _ => Err(ConvertError::InvalidUnit(s.to_string())),
-        }
+        DISTANCE_UNIT_STRINGS
+            .get(s.to_lowercase().as_str())
+            .copied()
+            .ok_or(ConvertError::InvalidUnit(s.to_string()))
     }
 }
 
@@ -192,6 +187,41 @@ impl fmt::Display for DistanceUnit {
         }
     }
 }
+
+static DISTANCE_UNIT_STRINGS: Lazy<HashMap<&'static str, DistanceUnit>> = Lazy::new(|| {
+    use DistanceUnit::*;
+    let mut map = HashMap::new();
+    map.insert("m", Meter);
+    map.insert("meter", Meter);
+    map.insert("meters", Meter);
+    map.insert("metre", Meter);
+    map.insert("metres", Meter);
+    map.insert("km", Kilometer);
+    map.insert("kilometer", Kilometer);
+    map.insert("kilometers", Kilometer);
+    map.insert("kilometre", Kilometer);
+    map.insert("kilometres", Kilometer);
+    map.insert("ft", Foot);
+    map.insert("foot", Foot);
+    map.insert("feet", Foot);
+    map.insert("mi", Mile);
+    map.insert("mile", Mile);
+    map.insert("miles", Mile);
+    map.insert("in", Inch);
+    map.insert("inch", Inch);
+    map.insert("inches", Inch);
+    map.insert("cm", Centimeter);
+    map.insert("centimeter", Centimeter);
+    map.insert("centimeters", Centimeter);
+    map.insert("centimetre", Centimeter);
+    map.insert("centimetres", Centimeter);
+    map.insert("mm", Millimeter);
+    map.insert("millimeter", Millimeter);
+    map.insert("millimeters", Millimeter);
+    map.insert("millimetre", Millimeter);
+    map.insert("millimetres", Millimeter);
+    map
+});
 
 #[cfg(test)]
 mod tests {

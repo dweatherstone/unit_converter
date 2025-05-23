@@ -39,11 +39,19 @@ fn main() {
             }
         }
         Commands::Expression(args) => match parse_expression(&args.expr) {
-            Ok((value, from, to)) => match get_converter(&from, &to) {
-                Ok(converer) => match converer.convert(value, &from, &to) {
-                    Ok(result) => println!("{} {} = {} {}", value, from, result, to),
-                    Err(e) => eprintln!("Conversion error: {}", e),
-                },
+            Ok(expression) => match get_converter(&expression.from, &expression.to) {
+                Ok(converter) => {
+                    match converter.convert(expression.value, &expression.from, &expression.to) {
+                        Ok(result) => println!(
+                            "{} {} = {} {}",
+                            expression.value,
+                            converter.get_unit_string(&expression.from),
+                            result,
+                            converter.get_unit_string(&expression.to)
+                        ),
+                        Err(e) => eprintln!("Conversion error: {}", e),
+                    }
+                }
                 Err(e) => eprintln!("Unsupported conversion: {}", e),
             },
             Err(e) => eprintln!("Failed to parse expression: {}", e),

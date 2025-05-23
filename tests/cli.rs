@@ -52,6 +52,6 @@ mod cli {
         cmd.args(["expression", "--expr", "10C -> F"])
             .assert()
             .success()
-            .stdout(contains("10 C = "));
+            .stdout(contains("10 °C = "));
     }
 }

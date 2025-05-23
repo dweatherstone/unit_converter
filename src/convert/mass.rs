@@ -1,5 +1,6 @@
-use std::{fmt::Display, str::FromStr};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 
+use once_cell::sync::Lazy;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -121,7 +122,7 @@ impl From<Gram> for Stone {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 pub enum MassUnit {
     Kilogram,
     Pound,
@@ -130,18 +131,20 @@ pub enum MassUnit {
     Gram,
 }
 
+impl MassUnit {
+    pub fn accepted_string() -> Vec<&'static str> {
+        MASS_UNIT_STRINGS.keys().copied().collect()
+    }
+}
+
 impl FromStr for MassUnit {
     type Err = ConvertError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "kg" | "kilogram" | "kilograms" => Ok(MassUnit::Kilogram),
-            "lb" | "pound" | "pounds" => Ok(MassUnit::Pound),
-            "st" | "stone" | "stones" => Ok(MassUnit::Stone),
-            "oz" | "ounce" | "ounces" => Ok(MassUnit::Ounce),
-            "g" | "gram" | "grams" => Ok(MassUnit::Gram),
-            _ => Err(ConvertError::InvalidUnit(s.to_string())),
-        }
+        MASS_UNIT_STRINGS
+            .get(s.to_lowercase().as_str())
+            .copied()
+            .ok_or(ConvertError::InvalidUnit(s.to_string()))
     }
 }
 
@@ -156,6 +159,27 @@ impl Display for MassUnit {
         }
     }
 }
+
+static MASS_UNIT_STRINGS: Lazy<HashMap<&'static str, MassUnit>> = Lazy::new(|| {
+    use MassUnit::*;
+    let mut map = HashMap::new();
+    map.insert("kg", Kilogram);
+    map.insert("kilogram", Kilogram);
+    map.insert("kilograms", Kilogram);
+    map.insert("lb", Pound);
+    map.insert("pound", Pound);
+    map.insert("pounds", Pound);
+    map.insert("st", Stone);
+    map.insert("stone", Stone);
+    map.insert("stones", Stone);
+    map.insert("oz", Ounce);
+    map.insert("ounce", Ounce);
+    map.insert("ounces", Ounce);
+    map.insert("g", Gram);
+    map.insert("gram", Gram);
+    map.insert("grams", Gram);
+    map
+});
 
 #[cfg(test)]
 mod tests {

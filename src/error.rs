@@ -8,6 +8,6 @@ pub enum ConvertError {
     #[error("Conversion from '{0}' to '{1}' not supported")]
     UnsupportedConversion(String, String),
 
-    #[error("Error parsing an expression")]
-    ParseError,
+    #[error("Error parsing an expression: {0}")]
+    ParseError(String),
 }

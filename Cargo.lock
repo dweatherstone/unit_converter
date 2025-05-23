@@ -383,6 +383,7 @@ version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "clap",
+ "once_cell",
  "predicates",
  "regex",
  "strsim",

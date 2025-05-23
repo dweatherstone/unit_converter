@@ -1,5 +1,6 @@
-use std::{fmt::Display, str::FromStr};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 
+use once_cell::sync::Lazy;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -86,23 +87,27 @@ impl From<Celsius> for Kelvin {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 pub enum TemperatureUnit {
     Celsius,
     Fahrenheit,
     Kelvin,
 }
 
+impl TemperatureUnit {
+    pub fn accepted_string() -> Vec<&'static str> {
+        TEMPERATURE_UNIT_STRINGS.keys().copied().collect()
+    }
+}
+
 impl FromStr for TemperatureUnit {
     type Err = ConvertError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "c" | "celsius" => Ok(TemperatureUnit::Celsius),
-            "f" | "fahrenheit" => Ok(TemperatureUnit::Fahrenheit),
-            "k" | "kelvin" => Ok(TemperatureUnit::Kelvin),
-            _ => Err(ConvertError::InvalidUnit(s.to_string())),
-        }
+        TEMPERATURE_UNIT_STRINGS
+            .get(&s.to_lowercase().as_str())
+            .copied()
+            .ok_or(ConvertError::InvalidUnit(s.to_string()))
     }
 }
 
@@ -115,6 +120,18 @@ impl Display for TemperatureUnit {
         }
     }
 }
+
+static TEMPERATURE_UNIT_STRINGS: Lazy<HashMap<&'static str, TemperatureUnit>> = Lazy::new(|| {
+    use TemperatureUnit::*;
+    let mut map = HashMap::new();
+    map.insert("c", Celsius);
+    map.insert("celsius", Celsius);
+    map.insert("f", Fahrenheit);
+    map.insert("fahrenheit", Fahrenheit);
+    map.insert("k", Kelvin);
+    map.insert("kelvin", Kelvin);
+    map
+});
 
 #[cfg(test)]
 mod tests {
