@@ -15,6 +15,7 @@ pub struct Cli {
 pub enum Commands {
     Convert(ConvertArgs),
     Expression(ExpressionArgs),
+    Interactive,
     List(ListArgs),
 }
 

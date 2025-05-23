@@ -6,6 +6,7 @@ use unitconvert::{
         temperature::TemperatureConverter,
     },
     expression::parse_expression,
+    interactive,
 };
 
 fn main() {
@@ -56,6 +57,12 @@ fn main() {
             },
             Err(e) => eprintln!("Failed to parse expression: {}", e),
         },
+        Commands::Interactive => {
+            if interactive::run_interactive().is_err() {
+                eprintln!("An error occurred. The program will now quit");
+                std::process::exit(1);
+            }
+        }
         Commands::List(args) => match &args.category {
             Some(category) => {
                 println!("Listing units in category: {}", category);
